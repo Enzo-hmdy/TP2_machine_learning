@@ -1,4 +1,5 @@
 
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import numpy as np
 from pyexcel.cookbook import merge_all_to_a_book
@@ -68,10 +69,30 @@ for i in range(0, int(len(data))):
     elif data[i][11] == 'Autumn':
         data[i][11] = 3
 
-# linear regression without using sklearn
+
+pourcentage = 0.7
 
 
-def mse(coef, x, y):
+def split_data(data, pourcentage):
+    numpy.random.shuffle(data)
+    split = int(len(data) * pourcentage)
+    return data[:split], data[split:]
+
+
+train, test = split_data(data, pourcentage)
+
+# extract second column as target both for train and test
+target_train = [i[1] for i in train]
+target_test = [i[1] for i in test]
+
+# delete second column from train and test
+train = numpy.delete(train, 1, 1)
+test = numpy.delete(test, 1, 1)
+
+
+reg = LinearRegression().fit(train, target_train)
+
+"""def mse(coef, x, y):
     return np.mean((y - np.dot(x, coef))**2)
 
 
@@ -103,17 +124,4 @@ def multilinear_regression(coef, x, y, lr, b1=0.9, b2=0.999, epsilon=1e-8):
                  (b1 * moment_m_coef + (1-b1)*grad/(1-b1**t)))
 
         coef = np.subtract(coef, delta)
-    return coef
-
-# testing of the linear regression
-
-
-def test_linear_regression():
-    x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    y = np.array([6, 15, 24])
-    coef = np.array([0, 0, 0])
-    coef = multilinear_regression(coef, x, y, 0.01)
-    print(coef)
-
-
-test_linear_regression()
+    return coef"""
