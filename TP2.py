@@ -34,7 +34,7 @@ def str_date_to_datatime(str_date):
 for i in range(0, int(len(dates))):
     dates[i] = str_date_to_datatime(dates[i])
 
-# transforms all date in days of the week
+# on transforme notre colonne de dates en colonne de jours de de la semaine 0 à 6 (0 = lundi, 6 = dimanche)
 
 
 def date_to_days(tab_date):
@@ -44,12 +44,11 @@ def date_to_days(tab_date):
     return day
 
 
-# replace first column by days of the week
 dates = date_to_days(dates)
 for i in range(0, int(len(dates))):
     data[i][0] = dates[i]
 
-# replace yes from column 10 by 1 and no by 0
+# On gère les données qui ne sont pas des nombres
 for i in range(0, int(len(data))):
 
     if data[i][13] == 'Yes':
@@ -73,7 +72,8 @@ for i in range(0, int(len(data))):
 
 data = data.astype(numpy.float)
 
-# delete all line of data where the value of last column is 0
+# On supprime les données dont la valeur de la dernière colonne est 0 car cela signifie que service n'était pas en marche
+# Donc que les données ne sont pas pertinentes
 tmp_data = data
 for i in range(0, int(len(data))):
     if data[i][13] == 0:
@@ -82,21 +82,25 @@ for i in range(0, int(len(data))):
 data = tmp_data
 
 
+# On garde les données correspondant à l'hiver
 winter_data = data
 for i in range(0, int(len(data))):
     if data[i][11] != 4:
         winter_data = numpy.delete(data, i, 0)
 
+# on garde les données correspondant au printemps
 spring_data = data
 for i in range(0, int(len(data))):
     if data[i][11] != 1:
         spring_data = numpy.delete(data, i, 0)
 
+# on garde les données correspondant à l'été
 summer_data = data
 for i in range(0, int(len(data))):
     if data[i][11] != 2:
         summer_data = numpy.delete(data, i, 0)
 
+# on garde les données correspondant à l'automne
 autumn_data = data
 for i in range(0, int(len(data))):
     if data[i][11] != 3:
@@ -105,6 +109,8 @@ for i in range(0, int(len(data))):
 
 pourcentage = 0.7
 
+# On sépare les données en données d'entrainement et données de test
+
 
 def split_data(data, pourcentage):
     numpy.random.shuffle(data)
@@ -112,6 +118,7 @@ def split_data(data, pourcentage):
     return data[:split], data[split:]
 
 
+# On récupère les données d'entrainement et de test
 train, test = split_data(data, pourcentage)
 train_winter, test_winter = split_data(winter_data, pourcentage)
 train_spring, test_spring = split_data(spring_data, pourcentage)
@@ -119,8 +126,7 @@ train_summer, test_summer = split_data(summer_data, pourcentage)
 train_autumn, test_autumn = split_data(autumn_data, pourcentage)
 
 
-# extract second column as target both for train and test
-
+# On extrait les données qui serviront d'objectif à atteindre, soit ici le nombre de vélos loués
 target_train = [i[1] for i in train]
 target_test = [i[1] for i in test]
 
@@ -136,9 +142,8 @@ target_test_summer = [i[1] for i in test_summer]
 target_train_autumn = [i[1] for i in train_autumn]
 target_test_autumn = [i[1] for i in test_autumn]
 
-# delete second column from train and test
 
-
+# Pour tous ls train et test on supprime la colonne qui contient le nombre de vélos loués
 all_test_train = [train, test, train_winter, test_winter, train_spring,
                   test_spring, train_summer, test_summer, train_autumn, test_autumn]
 for i in range(0, int(len(all_test_train))):
@@ -148,6 +153,7 @@ for i in range(0, int(len(all_test_train))):
 train, test, train_winter, test_winter, train_spring, test_spring, train_summer, test_summer, train_autumn, test_autumn = all_test_train
 
 
+# On réalise la regression sur chaque set
 reg_total = LinearRegression().fit(train, target_train)
 reg_winter = LinearRegression().fit(train_winter, target_train_winter)
 reg_spring = LinearRegression().fit(train_spring, target_train_spring)
@@ -158,6 +164,8 @@ all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
 all_test = [test, test_winter, test_spring, test_summer, test_autumn]
 all_target = [target_test, target_test_winter,
               target_test_spring, target_test_summer, target_test_autumn]
+
+# On récupère le score de chaque regression
 
 
 def get_score(reg, test, target_test):
