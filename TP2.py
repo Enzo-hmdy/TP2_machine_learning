@@ -1,6 +1,8 @@
 
 from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import numpy as np
 from pyexcel.cookbook import merge_all_to_a_book
@@ -79,11 +81,26 @@ for i in range(0, int(len(data))):
 
 data = tmp_data
 
-# keep only the line where the value of column 11 is 4
+
 winter_data = data
 for i in range(0, int(len(data))):
     if data[i][11] != 4:
         winter_data = numpy.delete(data, i, 0)
+
+spring_data = data
+for i in range(0, int(len(data))):
+    if data[i][11] != 1:
+        spring_data = numpy.delete(data, i, 0)
+
+summer_data = data
+for i in range(0, int(len(data))):
+    if data[i][11] != 2:
+        summer_data = numpy.delete(data, i, 0)
+
+autumn_data = data
+for i in range(0, int(len(data))):
+    if data[i][11] != 3:
+        autumn_data = numpy.delete(data, i, 0)
 
 
 pourcentage = 0.7
@@ -97,33 +114,64 @@ def split_data(data, pourcentage):
 
 train, test = split_data(data, pourcentage)
 train_winter, test_winter = split_data(winter_data, pourcentage)
+train_spring, test_spring = split_data(spring_data, pourcentage)
+train_summer, test_summer = split_data(summer_data, pourcentage)
+train_autumn, test_autumn = split_data(autumn_data, pourcentage)
+
 
 # extract second column as target both for train and test
+
 target_train = [i[1] for i in train]
 target_test = [i[1] for i in test]
 
 target_train_winter = [i[1] for i in train_winter]
 target_test_winter = [i[1] for i in test_winter]
 
+target_train_spring = [i[1] for i in train_spring]
+target_test_spring = [i[1] for i in test_spring]
+
+target_train_summer = [i[1] for i in train_summer]
+target_test_summer = [i[1] for i in test_summer]
+
+target_train_autumn = [i[1] for i in train_autumn]
+target_test_autumn = [i[1] for i in test_autumn]
+
 # delete second column from train and test
-train = numpy.delete(train, 1, 1)
-test = numpy.delete(test, 1, 1)
-train_winter = numpy.delete(train_winter, 1, 1)
-test_winter = numpy.delete(test_winter, 1, 1)
-# delete last column from train and test
-train = numpy.delete(train, 11, 1)
-test = numpy.delete(test, 11, 1)
-train = numpy.delete(train, 11, 1)
-test = numpy.delete(test, 11, 1)
-train = numpy.delete(train, 7, 1)
-test = numpy.delete(test, 7, 1)
 
 
-reg = LinearRegression().fit(train, target_train)
-reg2 = LinearRegression().fit(train_winter, target_train_winter)
+all_test_train = [train, test, train_winter, test_winter, train_spring,
+                  test_spring, train_summer, test_summer, train_autumn, test_autumn]
+for i in range(0, int(len(all_test_train))):
+    print(all_test_train[i].shape)
+    all_test_train[i] = numpy.delete(all_test_train[i], 1, 1)
+    print(all_test_train[i].shape)
+train, test, train_winter, test_winter, train_spring, test_spring, train_summer, test_summer, train_autumn, test_autumn = all_test_train
 
-y_prediction = reg.predict(test)
-print(y_prediction)
 
-print(reg)
-print(reg2.score(test_winter, target_test_winter))
+reg_total = LinearRegression().fit(train, target_train)
+reg_winter = LinearRegression().fit(train_winter, target_train_winter)
+reg_spring = LinearRegression().fit(train_spring, target_train_spring)
+reg_summer = LinearRegression().fit(train_summer, target_train_summer)
+reg_autumn = LinearRegression().fit(train_autumn, target_train_autumn)
+
+all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
+all_test = [test, test_winter, test_spring, test_summer, test_autumn]
+all_target = [target_test, target_test_winter,
+              target_test_spring, target_test_summer, target_test_autumn]
+
+
+def get_score(reg, test, target_test):
+    score = reg.score(test, target_test)
+    print(score)
+
+
+def get_mean_score(reg, test, target_test):
+    score = 0
+    for i in range(0, 10000):
+        score += reg.score(test, target_test)
+    print("mean score : ", score / 10000)
+
+
+for i in range(0, int(len(all_reg))):
+    get_score(all_reg[i], all_test[i], all_target[i])
+    #get_mean_score(all_reg[i], all_test[i], all_target[i])
