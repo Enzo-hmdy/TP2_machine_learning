@@ -147,9 +147,7 @@ target_test_autumn = [i[1] for i in test_autumn]
 all_test_train = [train, test, train_winter, test_winter, train_spring,
                   test_spring, train_summer, test_summer, train_autumn, test_autumn]
 for i in range(0, int(len(all_test_train))):
-    print(all_test_train[i].shape)
     all_test_train[i] = numpy.delete(all_test_train[i], 1, 1)
-    print(all_test_train[i].shape)
 train, test, train_winter, test_winter, train_spring, test_spring, train_summer, test_summer, train_autumn, test_autumn = all_test_train
 
 
@@ -170,7 +168,8 @@ all_target = [target_test, target_test_winter,
 
 def get_score(reg, test, target_test):
     score = reg.score(test, target_test)
-    print(score)
+    # print the name of variable the regression and the score
+    print("Score de la regression : ", score)
 
 
 def get_mean_score(reg, test, target_test):
