@@ -3,6 +3,7 @@ from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
+from sklearn import linear_model
 import matplotlib.pyplot as plt
 import numpy as np
 from pyexcel.cookbook import merge_all_to_a_book
@@ -142,6 +143,39 @@ target_test_summer = [i[1] for i in test_summer]
 target_train_autumn = [i[1] for i in train_autumn]
 target_test_autumn = [i[1] for i in test_autumn]
 
+# normalise all target train and test
+"""target_train = sklearn.preprocessing.normalize([target_train])
+print("\n\n\n\n\n ", target_train, "\n\n\n\n\n ")
+target_test = sklearn.preprocessing.normalize([target_test])
+
+target_train_winter = sklearn.preprocessing.normalize([target_train_winter])
+target_test_winter = sklearn.preprocessing.normalize([target_test_winter])
+
+target_train_spring = sklearn.preprocessing.normalize([target_train_spring])
+target_test_spring = sklearn.preprocessing.normalize([target_test_spring])
+
+target_train_summer = sklearn.preprocessing.normalize([target_train_summer])
+target_test_summer = sklearn.preprocessing.normalize([target_test_summer])
+
+target_train_autumn = sklearn.preprocessing.normalize([target_train_autumn])
+target_test_autumn = sklearn.preprocessing.normalize([target_test_autumn])"""
+
+# transpose all target train and test
+target_train = target_train
+target_test = target_test
+
+target_train_winter = target_train_winter
+target_test_winter = target_test_winter
+
+target_train_spring = target_train_spring
+target_test_spring = target_test_spring
+
+target_train_summer = target_train_summer
+target_test_summer = target_test_summer
+
+target_train_autumn = target_train_autumn
+target_test_autumn = target_test_autumn
+
 
 # Pour tous ls train et test on supprime la colonne qui contient le nombre de vélos loués
 all_test_train = [train, test, train_winter, test_winter, train_spring,
@@ -152,17 +186,50 @@ train, test, train_winter, test_winter, train_spring, test_spring, train_summer,
 
 
 # On réalise la regression sur chaque set
+# print shape of train and target train
 reg_total = LinearRegression().fit(train, target_train)
 reg_winter = LinearRegression().fit(train_winter, target_train_winter)
 reg_spring = LinearRegression().fit(train_spring, target_train_spring)
 reg_summer = LinearRegression().fit(train_summer, target_train_summer)
 reg_autumn = LinearRegression().fit(train_autumn, target_train_autumn)
 
-all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
-all_test = [test, test_winter, test_spring, test_summer, test_autumn]
-all_target = [target_test, target_test_winter,
-              target_test_spring, target_test_summer, target_test_autumn]
+# Regression lasso
+reg_lasso_total = linear_model.Lasso(alpha=0.01).fit(train, target_train)
+reg_lasso_winter = linear_model.Lasso(
+    alpha=0.01).fit(train_winter, target_train_winter)
+reg_lasso_spring = linear_model.Lasso(
+    alpha=0.01).fit(train_spring, target_train_spring)
+reg_lasso_summer = linear_model.Lasso(
+    alpha=0.01).fit(train_summer, target_train_summer)
+reg_lasso_autumn = linear_model.Lasso(
+    alpha=0.01).fit(train_autumn, target_train_autumn)
 
+# Regression ridge
+reg_ridge_total = linear_model.Ridge(alpha=0.01).fit(train, target_train)
+reg_ridge_winter = linear_model.Ridge(
+    alpha=0.01).fit(train_winter, target_train_winter)
+reg_ridge_spring = linear_model.Ridge(
+    alpha=0.01).fit(train_spring, target_train_spring)
+reg_ridge_summer = linear_model.Ridge(
+    alpha=0.01).fit(train_summer, target_train_summer)
+reg_ridge_autumn = linear_model.Ridge(
+    alpha=0.01).fit(train_autumn, target_train_autumn)
+
+
+all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
+all_laso_reg = [reg_lasso_total, reg_lasso_winter,
+                reg_lasso_spring, reg_lasso_summer, reg_lasso_autumn]
+all_ridge_reg = [reg_ridge_total, reg_ridge_winter,
+                 reg_lasso_spring, reg_lasso_summer, reg_lasso_autumn]
+
+
+all_test = [test, test_winter, test_spring, test_summer, test_autumn]
+all_train = [train, train_winter, train_spring, train_summer, train_autumn]
+
+all_target_test = [target_test, target_test_winter,
+                   target_test_spring, target_test_summer, target_test_autumn]
+all_target_train = [target_train, target_train_winter,
+                    target_test_spring, target_test_summer, target_test_autumn]
 # On récupère le score de chaque regression
 
 
@@ -179,6 +246,24 @@ def get_mean_score(reg, test, target_test):
     print("mean score : ", score / 10000)
 
 
+def get_MSE(target_test, test):
+    score = mean_squared_error(target_test, test)
+    # print the name of variable the regression and the score
+    print("MEAN SQARED ERROR : ", score)
+
+
+print("\n\n ----------NORMAL -----------------------------\n\n")
 for i in range(0, int(len(all_reg))):
-    get_score(all_reg[i], all_test[i], all_target[i])
-    #get_mean_score(all_reg[i], all_test[i], all_target[i])
+    get_score(all_reg[i], all_test[i], all_target_test[i])
+print("\n\n ----------LASSO -----------------------------\n\n")
+for i in range(0, int(len(all_laso_reg))):
+    get_score(all_laso_reg[i], all_test[i], all_target_test[i])
+
+print("\n\n ----------RIDGE-------------------\n\n")
+for i in range(0, int(len(all_ridge_reg))):
+
+    get_score(all_ridge_reg[i], all_test[i], all_target_test[i])
+
+print("\n\n ---------- MSE -----------------------------\n\n")
+for i in range(0, int(len(all_reg))):
+    get_MSE(all_target_test[i], all_reg[i].predict(all_test[i]))
