@@ -14,12 +14,17 @@ from datetime import *
 import os
 import glob
 import csv
-
+import seaborn as sns
+import pandas as pd
 # Chargement des données
 data = csv.reader(open("SeoulBikedata.csv", "r"),
                   delimiter=",")
 
 data = list(data)
+
+# convert data into dataframe
+
+
 # delete la premiere ligne
 data = numpy.delete(data, 0, 0)
 
@@ -81,6 +86,39 @@ for i in range(0, int(len(data))):
         tmp_data = numpy.delete(data, i, 0)
 
 data = tmp_data
+
+
+#  plot corelation matrix for each variable
+def plot_correlation_matrix(data):
+    corr = data.corr()
+    sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns)
+    plt.show()
+    print(corr)
+
+
+plot_correlation_matrix(pd.DataFrame(data))
+
+
+figure, axis = plt.subplots(2, 2)
+
+# For Sine Function
+axis[0, 0].plot(data[:, 3], data[:, 1], '.')
+axis[0, 0].set_title("Temperature vs Count")
+
+axis[0, 1].plot(data[:, 9], data[:, 1], '.')
+axis[0, 1].set_title("Pluie vs Count")
+
+axis[1, 0].plot(data[:, 10], data[:, 1], '.')
+axis[1, 0].set_title("Neige vs Count")
+
+axis[1, 1].plot(data[:, 5], data[:, 1], '.')
+axis[1, 1].set_title("Vent vs Count")
+
+
+plt.show()
+
+
+# On sépare les données en données d'entrainement et données de test
 
 
 # On garde les données correspondant à l'hiver
