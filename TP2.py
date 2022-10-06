@@ -1,13 +1,15 @@
 
 from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn import linear_model
+from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import numpy as np
-from pyexcel.cookbook import merge_all_to_a_book
+
 import csv
 import numpy
 import sklearn
@@ -344,3 +346,36 @@ plt.plot((Y_pred)[:80])
 plt.plot((np.array(target_test)[:80]))
 plt.legend(["Prediction", "valeur réelle"])
 plt.show()
+
+
+param_grid = {"n_estimators":[50,100,150],
+              'max_depth' : [10,15,20,25,'none'],
+              'min_samples_split': [10,50,100],
+              'max_features' :[24,35,40,49]}
+
+model1 = RandomForestRegressor()
+grid1 = GridSearchCV(estimator=model1, param_grid=param_grid)
+grid1.fit(train, target_train)
+
+# Regression random forest
+reg_forest_total = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train, target_train)
+reg_forest_winter = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_winter, target_train_winter)
+reg_forest_spring = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_spring, target_train_spring)
+reg_forest_summer = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_summer, target_train_summer)
+reg_forest_autumn = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_autumn, target_train_autumn)
+
+all_forest_reg = [reg_forest_total, reg_forest_winter, reg_forest_spring, reg_forest_summer, reg_forest_autumn]
+print("\n\n ---------- NORMAL DECISION TREE -----------------------------\n\n")
+for i in range(0, int(len(all_forest_reg))):
+    get_score(all_forest_reg[i], all_test[i], all_target_test[i])
+
+
+Y_forest_pred = all_forest_reg.predict(test)
+
+# ploting the line graph of actual and predicted values
+plt.figure(figsize=(12, 5))
+plt.plot((Y_forest_pred)[:80])
+plt.plot((np.array(target_test)[:80]))
+plt.legend(["Prediction", "valeur réelle"])
+plt.show()
+
