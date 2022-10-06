@@ -1,6 +1,7 @@
 
 from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn import linear_model
@@ -86,9 +87,25 @@ for i in range(0, int(len(data))):
         tmp_data = numpy.delete(data, i, 0)
 
 data = tmp_data
+# delete 7th column
+data = numpy.delete(data, 7, 1)
 
 
-#  plot corelation matrix for each variable
+def hour(h):
+    if h >= 17 and h <= 22:
+        return 1
+    elif h >= 7 and h <= 10:
+        return 2
+    elif h >= 11 and h <= 16:
+        return 3
+    else:
+        return 4
+
+
+for i in range(0, int(len(data))):
+    data[i][2] = hour(data[i][2])
+
+
 def plot_correlation_matrix(data):
     corr = data.corr()
     sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns)
@@ -164,6 +181,33 @@ train_spring, test_spring = split_data(spring_data, pourcentage)
 train_summer, test_summer = split_data(summer_data, pourcentage)
 train_autumn, test_autumn = split_data(autumn_data, pourcentage)
 
+"""X_data = numpy.delete(data, 1, 1)
+Y_data = data[:, 1]
+
+X_winter_data = numpy.delete(winter_data, 1, 1)
+Y_winter_data = winter_data[:, 1]
+
+X_spring_data = numpy.delete(spring_data, 1, 1)
+Y_spring_data = spring_data[:, 1]
+
+X_summer_data = numpy.delete(summer_data, 1, 1)
+Y_summer_data = summer_data[:, 1]
+
+X_autumn_data = numpy.delete(autumn_data, 1, 1)
+Y_autumn_data = autumn_data[:, 1]
+
+
+# Train test split our data
+""train, test, target_train, target_test = train_test_split(
+    X_data, Y_data, test_size=0.999, random_state=100)
+train_winter, test_winter, target_train_winter, target_test_winter = train_test_split(
+    X_winter_data, Y_winter_data, test_size=0.25, random_state=100)
+train_spring, test_spring, target_train_spring, target_test_spbring = train_test_split(
+    X_spring_data, Y_spring_data, test_size=0.25, random_state=100)
+train_summer, test_summer, target_train_summer, target_test_summer = train_test_split(
+    X_summer_data, Y_summer_data, test_size=0.25, random_state=100)
+train_autumn, test_autumn, target_train_autumn, target_test_autumn = train_test_split(
+    X_autumn_data, Y_autumn_data, test_size=0.25, random_state=100)"""
 
 # On extrait les données qui serviront d'objectif à atteindre, soit ici le nombre de vélos loués
 target_train = [i[1] for i in train]
@@ -181,22 +225,6 @@ target_test_summer = [i[1] for i in test_summer]
 target_train_autumn = [i[1] for i in train_autumn]
 target_test_autumn = [i[1] for i in test_autumn]
 
-# normalise all target train and test
-"""target_train = sklearn.preprocessing.normalize([target_train])
-print("\n\n\n\n\n ", target_train, "\n\n\n\n\n ")
-target_test = sklearn.preprocessing.normalize([target_test])
-
-target_train_winter = sklearn.preprocessing.normalize([target_train_winter])
-target_test_winter = sklearn.preprocessing.normalize([target_test_winter])
-
-target_train_spring = sklearn.preprocessing.normalize([target_train_spring])
-target_test_spring = sklearn.preprocessing.normalize([target_test_spring])
-
-target_train_summer = sklearn.preprocessing.normalize([target_train_summer])
-target_test_summer = sklearn.preprocessing.normalize([target_test_summer])
-
-target_train_autumn = sklearn.preprocessing.normalize([target_train_autumn])
-target_test_autumn = sklearn.preprocessing.normalize([target_test_autumn])"""
 
 # transpose all target train and test
 target_train = target_train
@@ -305,3 +333,14 @@ for i in range(0, int(len(all_ridge_reg))):
 print("\n\n ---------- MSE -----------------------------\n\n")
 for i in range(0, int(len(all_reg))):
     get_MSE(all_target_test[i], all_reg[i].predict(all_test[i]))
+
+
+Y_pred = reg_total.predict(test)
+
+
+# ploting the line graph of actual and predicted values
+plt.figure(figsize=(12, 5))
+plt.plot((Y_pred)[:80])
+plt.plot((np.array(target_test)[:80]))
+plt.legend(["Prediction", "valeur réelle"])
+plt.show()
