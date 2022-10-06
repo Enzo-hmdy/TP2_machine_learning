@@ -183,6 +183,15 @@ train_spring, test_spring = split_data(spring_data, pourcentage)
 train_summer, test_summer = split_data(summer_data, pourcentage)
 train_autumn, test_autumn = split_data(autumn_data, pourcentage)
 
+
+def cross_validation_split(data, pourcentage):
+    numpy.random.shuffle(data)
+    split = int(len(data) * pourcentage)
+    return data[:split], data[split:split*2], data[split*2:split*3], data[split*3:split*4], data[split*4:]
+
+cross1, cross2, cross3, cross4, cross5 = cross_validation_split(data, 0.2)
+
+
 """X_data = numpy.delete(data, 1, 1)
 Y_data = data[:, 1]
 
@@ -291,10 +300,10 @@ all_ridge_reg = [reg_ridge_total, reg_ridge_winter,
                  reg_lasso_spring, reg_lasso_summer, reg_lasso_autumn]
 
 
-all_test = [test, test_winter, test_spring, test_summer, test_autumn]
+all_test = [test, test, test_winter, test_spring, test_summer, test_autumn]
 all_train = [train, train_winter, train_spring, train_summer, train_autumn]
 
-all_target_test = [target_test, target_test_winter,
+all_target_test = [target_test, target_test, target_test_winter,
                    target_test_spring, target_test_summer, target_test_autumn]
 all_target_train = [target_train, target_train_winter,
                     target_test_spring, target_test_summer, target_test_autumn]
@@ -348,23 +357,38 @@ plt.legend(["Prediction", "valeur réelle"])
 plt.show()
 
 
-param_grid = {"n_estimators":[50,100,150],
-              'max_depth' : [10,15,20,25,'none'],
-              'min_samples_split': [10,50,100],
-              'max_features' :[24,35,40,49]}
+"""param_grid = {
+    'bootstrap': [True],
+    'max_depth': [80, 90, 100, 110],
+    'max_features': [2, 3],
+    'min_samples_leaf': [3, 4, 5],
+    'min_samples_split': [8, 10, 12],
+    'n_estimators': [100, 200, 300, 1000]
+}
+rf = RandomForestRegressor()
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid,
+                           n_jobs=-1, verbose=2)
+grid_search.fit(train, target_train)
+print(grid_search.best_params_)
+print(grid_search.best_score_)"""
 
-model1 = RandomForestRegressor()
-grid1 = GridSearchCV(estimator=model1, param_grid=param_grid)
-grid1.fit(train, target_train)
 
 # Regression random forest
-reg_forest_total = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train, target_train)
-reg_forest_winter = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_winter, target_train_winter)
-reg_forest_spring = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_spring, target_train_spring)
-reg_forest_summer = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_summer, target_train_summer)
-reg_forest_autumn = RandomForestRegressor(n_estimators = 100, random_state = 0).fit(train_autumn, target_train_autumn)
+reg_test = RandomForestRegressor(bootstrap=True, max_depth=20, max_features=24,
+                                 min_samples_leaf=3, min_samples_split=10, n_estimators=150).fit(train, target_train)
+reg_forest_total = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train, target_train)
+reg_forest_winter = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_winter, target_train_winter)
+reg_forest_spring = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_spring, target_train_spring)
+reg_forest_summer = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_summer, target_train_summer)
+reg_forest_autumn = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_autumn, target_train_autumn)
 
-all_forest_reg = [reg_forest_total, reg_forest_winter, reg_forest_spring, reg_forest_summer, reg_forest_autumn]
+all_forest_reg = [reg_test, reg_forest_total, reg_forest_winter,
+                  reg_forest_spring, reg_forest_summer, reg_forest_autumn]
 print("\n\n ---------- NORMAL DECISION TREE -----------------------------\n\n")
 for i in range(0, int(len(all_forest_reg))):
     get_score(all_forest_reg[i], all_test[i], all_target_test[i])
@@ -378,4 +402,3 @@ plt.plot((Y_forest_pred)[:80])
 plt.plot((np.array(target_test)[:80]))
 plt.legend(["Prediction", "valeur réelle"])
 plt.show()
-
