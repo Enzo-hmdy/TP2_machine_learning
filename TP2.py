@@ -1,6 +1,7 @@
 
 from distutils.util import copydir_run_2to3
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
@@ -281,6 +282,39 @@ reg_ridge_summer = linear_model.Ridge(
 reg_ridge_autumn = linear_model.Ridge(
     alpha=0.01).fit(train_autumn, target_train_autumn)
 
+
+alphas = numpy.arange(0.01, 100, 0.01)
+
+"""model = Ridge()
+grid = GridSearchCV(estimator=model, param_grid=dict(alpha=alphas))
+grid.fit(train, target_train)
+# plot the results with matplotlib histogram separately with log scale for x axis
+plt.figure(figsize=(10, 10))
+plt.subplot(211)
+plt.title('Ridge Regression')
+plt.xlabel('alpha')
+plt.ylabel('score')
+plt.plot(alphas, grid.cv_results_['mean_test_score'])
+plt.xscale('log')
+plt.show()
+# print best alpha
+print(grid.best_estimator_.alpha)
+"""
+"""
+model = Lasso()
+grid = GridSearchCV(estimator=model, param_grid=dict(alpha=alphas))
+grid.fit(train, target_train)
+# plot the results with matplotlib histogram separately with log scale for x axis
+plt.figure(figsize=(10, 10))
+plt.subplot(211)
+plt.title('Lasso Regression')
+plt.xlabel('alpha')
+plt.ylabel('score')
+plt.plot(alphas, grid.cv_results_['mean_test_score'])
+plt.xscale('log')
+plt.show()
+print("best score ", grid.best_estimator_.alpha)
+"""
 
 all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
 all_laso_reg = [reg_lasso_total, reg_lasso_winter,
