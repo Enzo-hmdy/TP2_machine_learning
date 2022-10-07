@@ -2,6 +2,8 @@
 from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
@@ -124,16 +126,16 @@ figure, axis = plt.subplots(2, 2)
 
 # For Sine Function
 axis[0, 0].plot(data[:, 3], data[:, 1], '.')
-axis[0, 0].set_title("Temperature vs Count")
+axis[0, 0].set_title("Nombre vélo vs Temperature")
 
 axis[0, 1].plot(data[:, 9], data[:, 1], '.')
-axis[0, 1].set_title("Pluie vs Count")
+axis[0, 1].set_title("Nombre vélo vs Pluie")
 
 axis[1, 0].plot(data[:, 10], data[:, 1], '.')
-axis[1, 0].set_title("Neige vs Count")
+axis[1, 0].set_title("Nombre vélo vs Neige")
 
 axis[1, 1].plot(data[:, 5], data[:, 1], '.')
-axis[1, 1].set_title("Vent vs Count")
+axis[1, 1].set_title("Nombre vélo vs vent")
 
 
 plt.show()
@@ -184,20 +186,6 @@ train_winter, test_winter = split_data(winter_data, pourcentage)
 train_spring, test_spring = split_data(spring_data, pourcentage)
 train_summer, test_summer = split_data(summer_data, pourcentage)
 train_autumn, test_autumn = split_data(autumn_data, pourcentage)
-
-
-"""
-# Train test split our data
-""train, test, target_train, target_test = train_test_split(
-    X_data, Y_data, test_size=0.999, random_state=100)
-train_winter, test_winter, target_train_winter, target_test_winter = train_test_split(
-    X_winter_data, Y_winter_data, test_size=0.25, random_state=100)
-train_spring, test_spring, target_train_spring, target_test_spbring = train_test_split(
-    X_spring_data, Y_spring_data, test_size=0.25, random_state=100)
-train_summer, test_summer, target_train_summer, target_test_summer = train_test_split(
-    X_summer_data, Y_summer_data, test_size=0.25, random_state=100)
-train_autumn, test_autumn, target_train_autumn, target_test_autumn = train_test_split(
-    X_autumn_data, Y_autumn_data, test_size=0.25, random_state=100)"""
 
 # On extrait les données qui serviront d'objectif à atteindre, soit ici le nombre de vélos loués
 target_train = [i[1] for i in train]
@@ -254,12 +242,63 @@ reg_ridge_summer = linear_model.Ridge(
 reg_ridge_autumn = linear_model.Ridge(
     alpha=0.01).fit(train_autumn, target_train_autumn)
 
+# Regression elastic net
+reg_elastic_total = linear_model.ElasticNet().fit(train, target_train)
+reg_elastic_winter = linear_model.ElasticNet().fit(
+    train_winter, target_train_winter)
+reg_elastic_spring = linear_model.ElasticNet().fit(
+    train_spring, target_train_spring)
+reg_elastic_summer = linear_model.ElasticNet().fit(
+    train_summer, target_train_summer)
+reg_elastic_autumn = linear_model.ElasticNet().fit(
+    train_autumn, target_train_autumn)
+
+# -------------------------------------- GRID SEARCH POUR MEILLEUR PARAMETRE --------------------------------------
+
+# Cette partie était pour tester les meilleurs alpha de la regression ridge et lasso mais le temps d'éxécution était trop long
+# donc on a mis en commentaire
+#alphas = numpy.arange(0.01, 100, 0.01)
+"""model = Ridge()
+grid = GridSearchCV(estimator=model, param_grid=dict(alpha=alphas))
+grid.fit(train, target_train)
+# plot the results with matplotlib histogram separately with log scale for x axis
+plt.figure(figsize=(10, 10))
+plt.subplot(211)
+plt.title('Ridge Regression')
+plt.xlabel('alpha')
+plt.ylabel('score')
+plt.plot(alphas, grid.cv_results_['mean_test_score'])
+plt.xscale('log')
+plt.show()
+# print best alpha
+print(grid.best_estimator_.alpha)
+"""
+"""
+model = Lasso()
+grid = GridSearchCV(estimator=model, param_grid=dict(alpha=alphas))
+grid.fit(train, target_train)
+# plot the results with matplotlib histogram separately with log scale for x axis
+plt.figure(figsize=(10, 10))
+plt.subplot(211)
+plt.title('Lasso Regression')
+plt.xlabel('alpha')
+plt.ylabel('score')
+plt.plot(alphas, grid.cv_results_['mean_test_score'])
+plt.xscale('log')
+plt.show()
+print("best score ", grid.best_estimator_.alpha)
+"""
+
+# gridsearch tunning for elastic net and give best parameters for L1 and alpha
+
 
 all_reg = [reg_total, reg_winter, reg_spring, reg_summer, reg_autumn]
 all_laso_reg = [reg_lasso_total, reg_lasso_winter,
                 reg_lasso_spring, reg_lasso_summer, reg_lasso_autumn]
 all_ridge_reg = [reg_ridge_total, reg_ridge_winter,
                  reg_lasso_spring, reg_lasso_summer, reg_lasso_autumn]
+all_elastic_reg = [reg_elastic_total, reg_elastic_winter,
+                   reg_elastic_spring, reg_elastic_summer, reg_elastic_autumn]
 
 
 all_test = [test, test, test_winter, test_spring, test_summer, test_autumn]
@@ -300,8 +339,12 @@ for i in range(0, int(len(all_laso_reg))):
 
 print("\n\n ----------RIDGE-------------------\n\n")
 for i in range(0, int(len(all_ridge_reg))):
-
     get_score(all_ridge_reg[i], all_test[i], all_target_test[i])
+
+print("\n\n ----------ELASTIC NET-------------------\n\n")
+for i in range(0, int(len(all_elastic_reg))):
+    get_score(all_elastic_reg[i], all_test[i], all_target_test[i])
+
 
 print("\n\n ---------- MSE -----------------------------\n\n")
 for i in range(0, int(len(all_reg))):
