@@ -1,14 +1,18 @@
 
 from distutils.util import copydir_run_2to3
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn import linear_model
+from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import numpy as np
-from pyexcel.cookbook import merge_all_to_a_book
+from numpy import mean
+from numpy import std
 import csv
 import numpy
 import sklearn
@@ -88,7 +92,8 @@ for i in range(0, int(len(data))):
         tmp_data = numpy.delete(data, i, 0)
 
 data = tmp_data
-# delete 7th column
+
+
 data = numpy.delete(data, 7, 1)
 
 
@@ -199,23 +204,6 @@ target_train_autumn = [i[1] for i in train_autumn]
 target_test_autumn = [i[1] for i in test_autumn]
 
 
-# transpose all target train and test
-target_train = target_train
-target_test = target_test
-
-target_train_winter = target_train_winter
-target_test_winter = target_test_winter
-
-target_train_spring = target_train_spring
-target_test_spring = target_test_spring
-
-target_train_summer = target_train_summer
-target_test_summer = target_test_summer
-
-target_train_autumn = target_train_autumn
-target_test_autumn = target_test_autumn
-
-
 # Pour tous ls train et test on supprime la colonne qui contient le nombre de vélos loués
 all_test_train = [train, test, train_winter, test_winter, train_spring,
                   test_spring, train_summer, test_summer, train_autumn, test_autumn]
@@ -313,10 +301,10 @@ all_elastic_reg = [reg_elastic_total, reg_elastic_winter,
                    reg_elastic_spring, reg_elastic_summer, reg_elastic_autumn]
 
 
-all_test = [test, test_winter, test_spring, test_summer, test_autumn]
+all_test = [test, test, test_winter, test_spring, test_summer, test_autumn]
 all_train = [train, train_winter, train_spring, train_summer, train_autumn]
 
-all_target_test = [target_test, target_test_winter,
+all_target_test = [target_test, target_test, target_test_winter,
                    target_test_spring, target_test_summer, target_test_autumn]
 all_target_train = [target_train, target_train_winter,
                     target_test_spring, target_test_summer, target_test_autumn]
@@ -371,4 +359,100 @@ plt.figure(figsize=(12, 5))
 plt.plot((Y_pred)[:80])
 plt.plot((np.array(target_test)[:80]))
 plt.legend(["Prediction", "valeur réelle"])
+plt.show()
+
+
+param_grid = {
+    'bootstrap': [True],
+    'max_depth': [80, 90, 100, 110],
+    'max_features': [2, 3],
+    'min_samples_leaf': [3, 4, 5],
+    'min_samples_split': [8, 10, 12],
+    'n_estimators': [100, 200, 300, 1000]
+}
+rf = RandomForestRegressor()
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid,
+                           n_jobs=-1, verbose=2)
+grid_search.fit(train, target_train)
+print(grid_search.best_params_)
+print(grid_search.best_score_)
+
+
+# Regression random forest
+reg_test = RandomForestRegressor(bootstrap=True, max_depth=20, max_features=24,
+                                 min_samples_leaf=3, min_samples_split=10, n_estimators=150).fit(train, target_train)
+reg_forest_total = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train, target_train)
+reg_forest_winter = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_winter, target_train_winter)
+reg_forest_spring = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_spring, target_train_spring)
+reg_forest_summer = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_summer, target_train_summer)
+reg_forest_autumn = RandomForestRegressor(
+    n_estimators=100, random_state=0).fit(train_autumn, target_train_autumn)
+
+# ----------------------Cross validation----------------------
+
+X_data = numpy.delete(data, 1, 1)
+Y_data = data[:, 1]
+reg_model = RandomForestRegressor(n_estimators=100, random_state=0)
+
+
+def get_cross_val_score(model, X_data, Y_data, ka_fold):
+    score = cross_val_score(model, X_data, Y_data, cv=ka_fold)
+    return mean(score), score.min(), score.max()
+
+
+def define_best_fold(X_data, Y_data, nbr_fold_max, model):
+    moyenne, min, max = list(), list(), list()
+    nbr_fold = range(2, nbr_fold_max)
+    for i in nbr_fold:
+        cv = KFold(n_splits=i, random_state=0, shuffle=True)
+        k_moyenne, k_min, k_max = get_cross_val_score(
+            model, X_data, Y_data, cv)
+        print('> folds=%d, accuracy=%.3f (%.3f,%.3f)' %
+              (i, k_moyenne, k_min, k_max))
+        moyenne.append(k_moyenne)
+        min.append(k_moyenne - k_min)
+        max.append(k_max - k_moyenne)
+    return moyenne, min, max, nbr_fold
+
+
+heorical_moyenne, theorical_min, theorical_max = get_cross_val_score(
+    reg_model, X_data, Y_data, KFold())
+
+
+moyenne_total, min_total, max_total, nbr_fold_total = define_best_fold(
+    X_data, Y_data, 35, reg_model)
+
+plt.errorbar(nbr_fold_total, moyenne_total, yerr=[
+             min_total, max_total], fmt='o', color='red', ecolor='blue', elinewidth=1, capsize=5)
+
+plt.title('Cross validation')
+plt.xlabel('Nombre de fold')
+plt.ylabel('Score R2')
+
+plt.legend(['Score du modèle en bleu, min et max de la rotation'])
+plt.show()
+
+
+# ------------------------------------------------------------------------
+
+all_forest_reg = [reg_test, reg_forest_total, reg_forest_winter,
+                  reg_forest_spring, reg_forest_summer, reg_forest_autumn]
+print("\n\n ---------- NORMAL DECISION TREE -----------------------------\n\n")
+for i in range(0, int(len(all_forest_reg))):
+    get_score(all_forest_reg[i], all_test[i], all_target_test[i])
+
+
+Y_forest_pred = reg_forest_total.predict(test)
+
+# ploting the line graph of actual and predicted values
+plt.figure(figsize=(12, 5))
+plt.plot((Y_forest_pred)[:80])
+plt.plot((Y_pred)[:80])
+plt.plot((np.array(target_test)[:80]))
+plt.legend(
+    ["Prediction_forect", "Prediction Regression Linéraire", "valeur réelle"])
 plt.show()
