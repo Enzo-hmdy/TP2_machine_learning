@@ -1,7 +1,7 @@
 
 from distutils.util import copydir_run_2to3
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
@@ -9,7 +9,8 @@ from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import numpy as np
-
+from numpy import mean
+from numpy import std
 import csv
 import numpy
 import sklearn
@@ -89,7 +90,8 @@ for i in range(0, int(len(data))):
         tmp_data = numpy.delete(data, i, 0)
 
 data = tmp_data
-# delete 7th column
+
+
 data = numpy.delete(data, 7, 1)
 
 
@@ -184,30 +186,7 @@ train_summer, test_summer = split_data(summer_data, pourcentage)
 train_autumn, test_autumn = split_data(autumn_data, pourcentage)
 
 
-def cross_validation_split(data, pourcentage):
-    numpy.random.shuffle(data)
-    split = int(len(data) * pourcentage)
-    return data[:split], data[split:split*2], data[split*2:split*3], data[split*3:split*4], data[split*4:]
-
-cross1, cross2, cross3, cross4, cross5 = cross_validation_split(data, 0.2)
-
-
-"""X_data = numpy.delete(data, 1, 1)
-Y_data = data[:, 1]
-
-X_winter_data = numpy.delete(winter_data, 1, 1)
-Y_winter_data = winter_data[:, 1]
-
-X_spring_data = numpy.delete(spring_data, 1, 1)
-Y_spring_data = spring_data[:, 1]
-
-X_summer_data = numpy.delete(summer_data, 1, 1)
-Y_summer_data = summer_data[:, 1]
-
-X_autumn_data = numpy.delete(autumn_data, 1, 1)
-Y_autumn_data = autumn_data[:, 1]
-
-
+"""
 # Train test split our data
 ""train, test, target_train, target_test = train_test_split(
     X_data, Y_data, test_size=0.999, random_state=100)
@@ -235,23 +214,6 @@ target_test_summer = [i[1] for i in test_summer]
 
 target_train_autumn = [i[1] for i in train_autumn]
 target_test_autumn = [i[1] for i in test_autumn]
-
-
-# transpose all target train and test
-target_train = target_train
-target_test = target_test
-
-target_train_winter = target_train_winter
-target_test_winter = target_test_winter
-
-target_train_spring = target_train_spring
-target_test_spring = target_test_spring
-
-target_train_summer = target_train_summer
-target_test_summer = target_test_summer
-
-target_train_autumn = target_train_autumn
-target_test_autumn = target_test_autumn
 
 
 # Pour tous ls train et test on supprime la colonne qui contient le nombre de vélos loués
@@ -357,7 +319,7 @@ plt.legend(["Prediction", "valeur réelle"])
 plt.show()
 
 
-"""param_grid = {
+param_grid = {
     'bootstrap': [True],
     'max_depth': [80, 90, 100, 110],
     'max_features': [2, 3],
@@ -370,7 +332,7 @@ grid_search = GridSearchCV(estimator=rf, param_grid=param_grid,
                            n_jobs=-1, verbose=2)
 grid_search.fit(train, target_train)
 print(grid_search.best_params_)
-print(grid_search.best_score_)"""
+print(grid_search.best_score_)
 
 
 # Regression random forest
@@ -387,6 +349,53 @@ reg_forest_summer = RandomForestRegressor(
 reg_forest_autumn = RandomForestRegressor(
     n_estimators=100, random_state=0).fit(train_autumn, target_train_autumn)
 
+# ----------------------Cross validation----------------------
+
+X_data = numpy.delete(data, 1, 1)
+Y_data = data[:, 1]
+reg_model = RandomForestRegressor(n_estimators=100, random_state=0)
+
+
+def get_cross_val_score(model, X_data, Y_data, ka_fold):
+    score = cross_val_score(model, X_data, Y_data, cv=ka_fold)
+    return mean(score), score.min(), score.max()
+
+
+def define_best_fold(X_data, Y_data, nbr_fold_max, model):
+    moyenne, min, max = list(), list(), list()
+    nbr_fold = range(2, nbr_fold_max)
+    for i in nbr_fold:
+        cv = KFold(n_splits=i, random_state=0, shuffle=True)
+        k_moyenne, k_min, k_max = get_cross_val_score(
+            model, X_data, Y_data, cv)
+        print('> folds=%d, accuracy=%.3f (%.3f,%.3f)' %
+              (i, k_moyenne, k_min, k_max))
+        moyenne.append(k_moyenne)
+        min.append(k_moyenne - k_min)
+        max.append(k_max - k_moyenne)
+    return moyenne, min, max, nbr_fold
+
+
+heorical_moyenne, theorical_min, theorical_max = get_cross_val_score(
+    reg_model, X_data, Y_data, KFold())
+
+
+moyenne_total, min_total, max_total, nbr_fold_total = define_best_fold(
+    X_data, Y_data, 35, reg_model)
+
+plt.errorbar(nbr_fold_total, moyenne_total, yerr=[
+             min_total, max_total], fmt='o', color='red', ecolor='blue', elinewidth=1, capsize=5)
+
+plt.title('Cross validation')
+plt.xlabel('Nombre de fold')
+plt.ylabel('Score R2')
+
+plt.legend(['Score du modèle en bleu, min et max de la rotation'])
+plt.show()
+
+
+# ------------------------------------------------------------------------
+
 all_forest_reg = [reg_test, reg_forest_total, reg_forest_winter,
                   reg_forest_spring, reg_forest_summer, reg_forest_autumn]
 print("\n\n ---------- NORMAL DECISION TREE -----------------------------\n\n")
@@ -394,11 +403,13 @@ for i in range(0, int(len(all_forest_reg))):
     get_score(all_forest_reg[i], all_test[i], all_target_test[i])
 
 
-Y_forest_pred = all_forest_reg.predict(test)
+Y_forest_pred = reg_forest_total.predict(test)
 
 # ploting the line graph of actual and predicted values
 plt.figure(figsize=(12, 5))
 plt.plot((Y_forest_pred)[:80])
+plt.plot((Y_pred)[:80])
 plt.plot((np.array(target_test)[:80]))
-plt.legend(["Prediction", "valeur réelle"])
+plt.legend(
+    ["Prediction_forect", "Prediction Regression Linéraire", "valeur réelle"])
 plt.show()
